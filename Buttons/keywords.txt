@@ -1,0 +1,4 @@
+Buttons	KEYWORD1
+init	KEYWORD2
+refresh	KEYWORD2
+buttonClicked	KEYWORD2
