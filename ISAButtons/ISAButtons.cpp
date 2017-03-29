@@ -5,29 +5,34 @@
 */
 
 #include "Arduino.h"
-#include <DueTimer.h>
-#include "Buttons.h"
+#include "ISAButtons.h"
 
-Buttons::Buttons()
+ISAButtons::ISAButtons()
 {
 }
 
-bool Buttons::buttons[numberOfButtons] = {false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false};
-int Buttons::previousState1 = 255;
 
-int Buttons::previousState2 = 255;
 
-void Buttons::init()
+
+void ISAButtons::init()
 {
   pinMode(latchPin, OUTPUT);
   pinMode(clockPin, OUTPUT);
   pinMode(dataPin, INPUT);
-
-  Timer.getAvailable().attachInterrupt(refresh).start(25000); 
 }
 
-void Buttons::refresh()
+void ISAButtons::refresh()
 {
+
+  unsigned long currentTimeStamp = millis();
+
+  if ( currentTimeStamp - timeOfLastButtonUpdate > 25 )
+  {
+     timeOfLastButtonUpdate = currentTimeStamp;
+  }
+  else  
+     return;
+
   digitalWrite(latchPin,1);
   //set it to 1 to collect parallel data, wait
   //delayMicroseconds(20);
@@ -37,45 +42,82 @@ void Buttons::refresh()
   //while the shift register is in serial mode
   //collect each shift register into a byte
   //the register attached to the chip comes in first
-  byte switchVar1 = shiftIn(dataPin, clockPin);
-  byte switchVar2 = shiftIn(dataPin, clockPin);
+  currentState1 = shiftIn(dataPin, clockPin);
+  currentState2 = shiftIn(dataPin, clockPin);
 
   for ( int i = 0; i < 8; ++i )
   {
-    int previous = previousState1 & (1 << i);
-    int current = switchVar1 & (1 << i);
+    int previous = (previousState1 & (1 << i)) >> i;
+    int current = (currentState1 & (1 << i)) >> i;
 
     if (current == 0 && previous != current)
-      buttons[ i ] = true;
+      buttonsPressed[ i ] = true;
     else
-      buttons[ i ] = false;
+      buttonsPressed[ i ] = false;
+
+    if (current == 1 && previous != current)
+      buttonsReleased[ i ] = true;
+    else
+      buttonsReleased[ i ] = false;
   }
 
   for ( int i = 0; i < 8; ++i )
   {
-    int previous = previousState2 & (1 << i);
-    int current = switchVar2 & (1 << i);
+    int previous = (previousState2 & (1 << i)) >> i;
+    int current = (currentState2 & (1 << i)) >> i;
 
     if (current == 0 && previous != current)
-      buttons[ i + 8] = true;
+      buttonsPressed[ i + 8] = true;
     else
-      buttons[ i + 8 ] = false;
+      buttonsPressed[ i + 8 ] = false;
+
+    if (current == 1 && previous != current)
+      buttonsReleased[ i + 8 ] = true;
+    else
+      buttonsReleased[ i + 8 ] = false;
   }
   
-  previousState1 = switchVar1;
-  previousState2 = switchVar2;
+  previousState1 = currentState1;
+  previousState2 = currentState2;
     
 }
 
-bool Buttons::buttonClicked( int id )
+//Zwraca true jezeli zostal przycisk nacisniety (zmienil stan w niewcisnietego na wcisniety)
+bool ISAButtons::buttonPressed( int id )
 {
+  refresh();
+
   if ( id >= numberOfButtons )
     return false;
   
-  return buttons[ id ];
+  return buttonsPressed[ id ];
 }
 
-byte Buttons::shiftIn(int myDataPin, int myClockPin) 
+//Zwraca true jezeli zostal przycisk zwolniony (zmienil stan w wcisnietego na niewcisniety)
+bool ISAButtons::buttonReleased( int id )
+{
+  refresh();
+
+  if ( id >= numberOfButtons )
+    return false;
+  
+  return buttonsReleased[ id ];
+}
+
+//Zwraca true jak wcisniety, false jak nie
+bool ISAButtons::buttonState( int id )
+{
+  refresh();
+ 
+  if ( id >= numberOfButtons )
+    return false;
+  else if (id < 8)
+    return ((~currentState1) & (1 << id)) >> id;
+  else 
+    return ((~currentState2) & (1 << (id - 8))) >> (id - 8);
+}
+
+byte ISAButtons::shiftIn(int myDataPin, int myClockPin) 
 {
   int i;
   int temp = 0;
