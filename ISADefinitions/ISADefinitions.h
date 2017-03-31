@@ -88,6 +88,8 @@ const static int LCD_DATA[] = {LCD_D4, LCD_D5, LCD_D6, LCD_D7};
 #define NUM_CLOCK	41
 #define NUM_DATA	42
 
+#include <ISATemplates.h>
+
 #endif // _ISA_DEFINITIONS_H_
 
 
