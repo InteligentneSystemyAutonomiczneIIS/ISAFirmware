@@ -28,10 +28,10 @@ const static int KEY_ARROWS[] = {KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT};
 #define	POT			A9
 
 // joystick 1 i 2, obie osie (X, Y)
-#define JOY1X		A11
-#define JOY1Y		A10
-#define JOY2X		A1
-#define JOY2Y		A0
+#define JOY2X		A11
+#define JOY2Y		A10
+#define JOY1X		A1
+#define JOY1Y		A0
 
 // serwonapędy - wyjścia PWM
 #define SERVO1		10
